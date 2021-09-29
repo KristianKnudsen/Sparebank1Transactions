@@ -1,6 +1,7 @@
 import json
 import requests
 import secrets
+import cryptocode as cc
 from flask import Flask, request, redirect, url_for, session
 
 app = Flask(__name__)
@@ -12,6 +13,9 @@ required_fields = {"access_token", "client_id", "client_secret", "fid", "redirec
 
 @app.route('/')
 def start():
+    if "access_token" in session:
+        return redirect(url_for("home"))
+
     authorization_code = request.args.get('code')
     data = load_keys()
     content = ""
@@ -43,8 +47,8 @@ def start():
         else:
             response = json.loads(api_call_response.text)
             content = 'All seems to be in order. Acount owner: ' + response['owner']['name']
-            session[""]
-            return redirect(url_for("home", name=response['owner']['name']))
+            session["access_token"] = cc.encrypt(access_token, app.secret_key)
+            return redirect(url_for("home", session="started"))
     if not access_token:
         content = '<a href=' + authorize_uri + \
                   '?response_type=code&client_id=' + client_id + \
@@ -65,7 +69,16 @@ def start():
 
 @app.route('/home')
 def home():
-    return "hai"
+    if "access_token" not in session:
+        return redirect(url_for("start"))
+
+    access_token = cc.decrypt(session["access_token"], app.secret_key)
+
+    api_call_headers = {'Authorization': 'Bearer ' + access_token}
+    api_call_response = requests.get('https://api.sparebank1.no/open/personal/banking/accounts/default',
+                                     headers=api_call_headers, verify=True)
+    response = json.loads(api_call_response.text)
+    return "hei " + response['owner']['name']
 
 
 def load_keys() -> dict:

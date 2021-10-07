@@ -4,6 +4,8 @@ import secrets
 import cryptocode as cc
 from flask import Flask, request, redirect, url_for, session
 
+from Account import Account
+
 app = Flask(__name__)
 app.secret_key = secrets.token_urlsafe(32)
 
@@ -79,6 +81,26 @@ def home():
                                      headers=api_call_headers, verify=True)
     response = json.loads(api_call_response.text)
     return "hei " + response['owner']['name']
+
+
+@app.route('/accounts')
+def accounts():
+
+    data = load_keys()
+    access_token = data["access_token"]
+
+    api_call_headers = {'Authorization': 'Bearer ' + access_token}
+    api_call_response = requests.get('https://api.sparebank1.no/open/personal/banking/accounts/all',
+                                     headers=api_call_headers, verify=True)
+    response = json.loads(api_call_response.text)
+    a = Account(response["accounts"][1])
+    print(a.aid)
+    link = "https://api.sparebank1.no/personal/banking/accounts/DY8nvCshpcFH4hBcm8ph_yesS4k/archived-transactions-count?from=2020-08-01&to=2021-10-01"
+    print(link)
+    api_call_response = requests.get(link,
+                                     headers=api_call_headers, verify=True)
+    print(api_call_response)
+    return "r"
 
 
 def load_keys() -> dict:
